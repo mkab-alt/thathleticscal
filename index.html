@@ -86,6 +86,10 @@
 
         <!-- Action Buttons & Theme Toggle -->
         <div class="flex items-center space-x-2 sm:space-x-3">
+          <button id="btn-sync-live" onclick="fetchLiveCalendarEvents(true)" class="px-3.5 py-2 rounded-xl bg-trinity-orange/20 hover:bg-trinity-orange/30 text-trinity-orange font-extrabold text-xs sm:text-sm transition flex items-center space-x-2 border border-trinity-orange/40 shadow-sm">
+            <i class="fa-solid fa-rotate text-trinity-orange" id="sync-icon"></i>
+            <span class="hidden sm:inline">Sync Live Feeds</span>
+          </button>
           <button id="btn-subscribe" onclick="openSubscribeModal()" class="px-3.5 py-2 rounded-xl bg-trinity-orange hover:bg-orange-600 text-trinity-navy font-extrabold text-xs sm:text-sm transition flex items-center space-x-2 shadow-md hover:shadow-lg transform active:scale-95">
             <i class="fa-solid fa-calendar-plus text-trinity-navy"></i>
             <span>Subscribe</span>
@@ -107,13 +111,18 @@
 
     <!-- Sport Filter Selection Section -->
     <section class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
         <h2 class="text-sm font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-2">
           <i class="fa-solid fa-filter text-trinity-orange"></i> Select Sport Filter
         </h2>
-        <span id="active-sport-indicator" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-          Showing: All Sports
-        </span>
+        <div class="flex items-center space-x-2">
+          <span id="sync-status-indicator" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-notch fa-spin text-trinity-orange"></i> Initializing feed sync...
+          </span>
+          <span id="active-sport-indicator" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+            Showing: All Sports
+          </span>
+        </div>
       </div>
 
       <!-- Sport Filter Buttons -->
@@ -142,68 +151,41 @@
           </p>
         </div>
 
-        <!-- View Mode Buttons -->
-        <div class="flex items-center space-x-1 bg-slate-200/80 dark:bg-slate-800 p-1 rounded-xl border border-slate-300/50 dark:border-slate-700">
-          <button id="view-btn-google" onclick="switchView('google')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm bg-trinity-navy text-white">
-            <i class="fa-brands fa-google"></i> Google Embed
-          </button>
-          <button id="view-btn-grid" onclick="switchView('grid')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-table-cells"></i> Grid View
-          </button>
-          <button id="view-btn-agenda" onclick="switchView('agenda')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 transition flex items-center gap-1.5">
-            <i class="fa-solid fa-list-ul"></i> Agenda View
-          </button>
+        <div class="flex items-center space-x-2">
+          <span class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-trinity-navy text-white flex items-center gap-2 border border-trinity-orange/30 shadow-sm">
+            <i class="fa-brands fa-google text-trinity-orange"></i> Live Google Calendar
+          </span>
         </div>
       </div>
 
-      <!-- VIEW 1: GOOGLE EMBED IFRAME -->
+      <!-- GOOGLE CALENDAR EMBED IFRAME -->
       <div id="view-container-google" class="p-2 sm:p-4 bg-slate-100 dark:bg-slate-950">
-        <div class="relative w-full rounded-xl overflow-hidden shadow-inner bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800" style="height: 700px;">
+        <div class="relative w-full rounded-xl overflow-hidden shadow-inner bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 h-[900px] sm:h-[1100px] lg:h-[1250px]">
           <iframe id="google-calendar-iframe" 
             src="" 
             style="border: 0; width: 100%; height: 100%;" 
             frameborder="0" 
             scrolling="no">
           </iframe>
-        </div>
-      </div>
 
-      <!-- VIEW 2: INTERACTIVE MONTHLY GRID -->
-      <div id="view-container-grid" class="p-4 sm:p-6 hidden">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100" id="grid-month-title">September 2026</h3>
-          <div class="flex items-center space-x-2">
-            <button onclick="prevMonth()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm">
-              <i class="fa-solid fa-chevron-left"></i>
-            </button>
-            <button onclick="resetMonth()" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200">
-              Current Month
-            </button>
-            <button onclick="nextMonth()" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm">
-              <i class="fa-solid fa-chevron-right"></i>
-            </button>
+          <!-- Empty State Overlay for sports without assigned Google Calendar ID -->
+          <div id="no-id-overlay" class="absolute inset-0 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center text-white hidden">
+            <div class="w-16 h-16 rounded-2xl bg-trinity-orange/20 border border-trinity-orange/40 flex items-center justify-center text-trinity-orange text-3xl mb-4">
+              <i class="fa-solid fa-calendar-xmark"></i>
+            </div>
+            <h3 class="text-xl font-extrabold mb-2" id="no-id-title">No Calendar ID Configured</h3>
+            <p class="text-xs text-slate-300 max-w-md mb-6 leading-relaxed" id="no-id-desc">
+              A Google Calendar ID has not been entered for this sport yet. Click below to add the official Google Calendar ID or switch back to All Sports.
+            </p>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <button onclick="openSettingsModal()" class="px-4 py-2.5 rounded-xl bg-trinity-orange hover:bg-orange-600 text-trinity-navy font-black text-xs transition shadow-lg">
+                <i class="fa-solid fa-gear mr-1.5"></i> Configure Calendar ID
+              </button>
+              <button onclick="selectSport('all')" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition border border-white/20">
+                View All Sports
+              </button>
+            </div>
           </div>
-        </div>
-
-        <!-- Days Headers -->
-        <div class="grid grid-cols-7 gap-1 text-center font-bold text-xs uppercase text-slate-400 mb-2">
-          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-        </div>
-
-        <!-- Month Grid Cells -->
-        <div class="grid grid-cols-7 gap-1 sm:gap-2" id="grid-days-container">
-          <!-- Rendered dynamically -->
-        </div>
-      </div>
-
-      <!-- VIEW 3: AGENDA LIST VIEW -->
-      <div id="view-container-agenda" class="p-4 sm:p-6 hidden">
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-          <input type="text" id="agenda-search" onkeyup="filterAgenda()" placeholder="Search opponent, sport, or venue..." class="w-full sm:w-72 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs focus:ring-2 focus:ring-trinity-orange outline-none">
-          <div class="text-xs text-slate-500 font-semibold" id="agenda-count">Showing all upcoming fixtures</div>
-        </div>
-        <div class="space-y-3" id="agenda-list-container">
-          <!-- Rendered dynamically -->
         </div>
       </div>
 
@@ -352,93 +334,38 @@
     </div>
   </div>
 
-  <!-- EVENT DETAILS MODAL -->
-  <div id="event-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-        <span id="event-modal-sport" class="text-xs font-bold px-2.5 py-1 rounded-full bg-trinity-orange/20 text-trinity-orange">
-          Sport
-        </span>
-        <button onclick="closeEventModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-      <div class="py-4 space-y-3">
-        <h3 id="event-modal-title" class="text-xl font-extrabold text-slate-900 dark:text-white leading-snug">
-          Match Title
-        </h3>
-        <p id="event-modal-time" class="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
-          <i class="fa-regular fa-clock text-trinity-orange"></i> Date & Time
-        </p>
-        <p id="event-modal-location" class="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
-          <i class="fa-solid fa-location-dot text-trinity-orange"></i> Venue
-        </p>
-      </div>
-      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-        <button onclick="closeEventModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200">
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-
   <script>
     const defaultSportCalendars = {
-      'basketball': { name: 'Basketball', icon: '🏀', id: '', color: '%23e65100', hex: '#e65100' },
       'cross-country': { name: 'Cross Country', icon: '🏃', id: 'c_17c86405d02617a19705f2d322af16504d55367e27e99c7f30826ecf2952918f@group.calendar.google.com', color: '%23616161', hex: '#616161' },
       'field-hockey': { name: 'Field Hockey', icon: '🏑', id: 'c_ede0875d9266e4da9e8b9ceb71e912ad24af093bedc8ad37ca69ca654384f83d@group.calendar.google.com', color: '%238e24aa', hex: '#8e24aa' },
+      'gymnastics': { name: 'Gymnastics', icon: '🤸', id: 'c_8cf2cdd3457fe9a52b0986135093573cc40450c89c285b07ae9d67081b89ca0e@group.calendar.google.com', color: '%2333b679', hex: '#33b679' },
+      'soccer': { name: 'Soccer', icon: '⚽', id: 'c_3b524239d0ed50afc7a0030f206dae6fd9c16d6d4b5b42c0f6bf373c012eb5b8@group.calendar.google.com', color: '%23039be5', hex: '#039be5' },
+      'tennis': { name: 'Tennis', icon: '🎾', id: 'c_9afdcba647b3edf68c242928cdeb59793fd7017378d63f4bcbf3c27e3e8286bf@group.calendar.google.com', color: '%23f6bf26', hex: '#f6bf26' },
+      'volleyball': { name: 'Volleyball', icon: '🏐', id: 'c_a0eab18ad6fd31f8929529acdb3b145a8d69d40ccac593bb6f17608c2dd029b8@group.calendar.google.com', color: '%23f4511e', hex: '#f4511e' },
+      'basketball': { name: 'Basketball', icon: '🏀', id: '', color: '%23e65100', hex: '#e65100' },
       'flag-football': { name: 'Flag Football', icon: '🏈', id: '', color: '%231b5e20', hex: '#1b5e20' },
       'golf': { name: 'Golf', icon: '⛳', id: '', color: '%232e7d32', hex: '#2e7d32' },
-      'gymnastics': { name: 'Gymnastics', icon: '🤸', id: 'c_8cf2cdd3457fe9a52b0986135093573cc40450c89c285b07ae9d67081b89ca0e@group.calendar.google.com', color: '%2333b679', hex: '#33b679' },
       'ice-hockey': { name: 'Ice Hockey', icon: '🏒', id: '', color: '%230288d1', hex: '#0288d1' },
       'lacrosse': { name: 'Lacrosse', icon: '🤍', id: '', color: '%23d81b60', hex: '#d81b60' },
       'sailing': { name: 'Sailing', icon: '⛵', id: '', color: '%2300838f', hex: '#00838f' },
-      'soccer': { name: 'Soccer', icon: '⚽', id: 'c_3b524239d0ed50afc7a0030f206dae6fd9c16d6d4b5b42c0f6bf373c012eb5b8@group.calendar.google.com', color: '%23039be5', hex: '#039be5' },
       'softball': { name: 'Softball', icon: '🥎', id: '', color: '%23c0ca33', hex: '#c0ca33' },
       'spring-track': { name: 'Spring Track & Field', icon: '👟', id: '', color: '%23795548', hex: '#795548' },
       'swimming': { name: 'Swimming', icon: '🏊', id: '', color: '%2300acc1', hex: '#00acc1' },
-      'tennis': { name: 'Tennis', icon: '🎾', id: 'c_9afdcba647b3edf68c242928cdeb59793fd7017378d63f4bcbf3c27e3e8286bf@group.calendar.google.com', color: '%23f6bf26', hex: '#f6bf26' },
-      'volleyball': { name: 'Volleyball', icon: '🏐', id: 'c_a0eab18ad6fd31f8929529acdb3b145a8d69d40ccac593bb6f17608c2dd029b8@group.calendar.google.com', color: '%23f4511e', hex: '#f4511e' },
       'winter-track': { name: 'Winter Track & Field', icon: '❄️', id: '', color: '%233949ab', hex: '#3949ab' }
     };
-
-    const eventsData = [
-      { id: 101, sportKey: 'soccer', title: 'Varsity Soccer Scrimmage vs. Manasquan', date: '2026-08-26', time: '10:00 AM - 12:00 PM', location: 'Maria Gatta Community Park (280 Port Au Peck Ave, Oceanport)' },
-      { id: 102, sportKey: 'field-hockey', title: 'Varsity Field Hockey Scrimmage vs. Wall', date: '2026-08-26', time: '3:45 PM - 5:30 PM', location: 'Maria Gatta Community Park (280 Port Au Peck Ave, Oceanport)' },
-      { id: 103, sportKey: 'cross-country', title: 'Cross Country Holmdel 5K Time Trial', date: '2026-08-26', time: '3:30 PM - 5:00 PM', location: 'Holmdel Park (44 Longstreet Rd, Holmdel)' },
-      { id: 104, sportKey: 'volleyball', title: 'Volleyball Preseason Scrimmage vs. RBC', date: '2026-08-26', time: '4:00 PM - 6:00 PM', location: 'Fort Monmouth Rec Center (2566 Guam Ln, Tinton Falls)' },
-      { id: 105, sportKey: 'tennis', title: 'Varsity Tennis Match vs. Ranney School', date: '2026-08-26', time: '3:30 PM - 5:30 PM', location: 'CBA Courts (850 Newman Springs Rd, Lincroft)' },
-      { id: 106, sportKey: 'gymnastics', title: 'Gymnastics Intensive Training', date: '2026-08-26', time: '4:00 PM - 6:00 PM', location: 'Spartan Gymnastics (612 Industrial Way W, Eatontown)' },
-      { id: 107, sportKey: 'basketball', title: 'Basketball Open Gym & Conditioning', date: '2026-11-23', time: '4:00 PM - 6:00 PM', location: 'Trinity Hall Gymnasium' },
-      { id: 108, sportKey: 'ice-hockey', title: 'Varsity Ice Hockey vs. Trinity Hall Scrimmage', date: '2026-11-28', time: '5:30 PM - 7:00 PM', location: 'Red Bank Armory Ice Complex' },
-      { id: 109, sportKey: 'swimming', title: 'Swim Team Time Trials', date: '2026-12-01', time: '4:00 PM - 5:30 PM', location: 'Monmouth University Pool' },
-      { id: 110, sportKey: 'sailing', title: 'Varsity Sailing Regatta', date: '2026-09-19', time: '9:00 AM - 2:00 PM', location: 'Shrewsbury Sailing & Yacht Club' },
-      { id: 111, sportKey: 'lacrosse', title: 'Varsity Lacrosse Season Opener', date: '2027-03-25', time: '4:00 PM', location: 'Maria Gatta Community Park' },
-      { id: 112, sportKey: 'softball', title: 'Varsity Softball vs. St. Rose', date: '2027-04-02', time: '4:00 PM', location: 'Maria Gatta Community Park' },
-      { id: 113, sportKey: 'golf', title: 'Monmouth County Girls Golf Invitational', date: '2027-04-10', time: '1:00 PM', location: 'Sunkissed Run Golf Course' },
-      { id: 114, sportKey: 'flag-football', title: 'Flag Football vs. Shore Regional', date: '2027-04-15', time: '4:30 PM', location: 'Maria Gatta Community Park' },
-      { id: 1, sportKey: 'soccer', title: 'Trinity Hall vs. Ranney School', date: '2026-09-02', time: '4:00 PM', location: 'Maria Gatta Community Park (280 Port Au Peck Ave, Oceanport)' },
-      { id: 2, sportKey: 'field-hockey', title: 'Trinity Hall vs. St. Rose High', date: '2026-09-03', time: '4:15 PM', location: 'Maria Gatta Community Park (280 Port Au Peck Ave, Oceanport)' },
-      { id: 3, sportKey: 'cross-country', title: 'Monmouth County Invitational', date: '2026-09-05', time: '9:00 AM', location: 'Holmdel Park (44 Longstreet Rd, Holmdel)' },
-      { id: 4, sportKey: 'volleyball', title: 'Trinity Hall vs. Red Bank Catholic', date: '2026-09-08', time: '5:30 PM', location: 'Fort Monmouth Rec Center (2566 Guam Ln, Tinton Falls)' },
-      { id: 5, sportKey: 'tennis', title: 'Trinity Hall vs. Holmdel High School', date: '2026-09-10', time: '4:00 PM', location: 'CBA Courts (850 Newman Springs Rd, Lincroft)' },
-      { id: 6, sportKey: 'gymnastics', title: 'Shore Conference Dual Meet', date: '2026-09-12', time: '10:00 AM', location: 'Spartan Gymnastics (612 Industrial Way W, Eatontown)' }
-    ];
 
     let storedCalendars = JSON.parse(localStorage.getItem('th_sport_calendars')) || {};
     let sportCalendars = { ...JSON.parse(JSON.stringify(defaultSportCalendars)), ...storedCalendars };
     let activeSport = 'all';
-    let currentView = 'google';
-    let currentGridDate = new Date();
 
     function buildEmbedUrl(sport) {
-      const baseUrl = "https://calendar.google.com/calendar/embed?ctz=America%2FNew_York";
+      const baseUrl = "https://calendar.google.com/calendar/embed?ctz=America%2FNew_York&showTitle=0&showTabs=1&showPrint=0&showTz=0";
       
       if (sport === 'all') {
         let combinedParams = "";
         Object.keys(sportCalendars).forEach(key => {
           const item = sportCalendars[key];
-          if (item && item.id) {
+          if (item && item.id && item.id.trim()) {
             const encodedId = encodeURIComponent(item.id.trim());
             const encodedColor = item.color || '%23f97316';
             combinedParams += `&src=${encodedId}&color=${encodedColor}`;
@@ -448,7 +375,7 @@
       }
 
       const item = sportCalendars[sport];
-      if (!item || !item.id) return baseUrl;
+      if (!item || !item.id || !item.id.trim()) return null;
 
       const encodedId = encodeURIComponent(item.id.trim());
       const encodedColor = item.color || '%23f97316';
@@ -487,183 +414,39 @@
       }
       renderSportButtons();
       updateCalendarView();
-      renderGridCalendar();
-      renderAgendaView();
     }
 
     function updateCalendarView() {
       const iframe = document.getElementById('google-calendar-iframe');
-      if (iframe) {
-        iframe.src = buildEmbedUrl(activeSport);
-      }
-
+      const overlay = document.getElementById('no-id-overlay');
       const title = document.getElementById('calendar-title');
       const subtitle = document.getElementById('calendar-subtitle');
+
+      const embedUrl = buildEmbedUrl(activeSport);
 
       if (title && subtitle) {
         if (activeSport === 'all') {
           title.innerText = 'Trinity Hall Athletics Schedule';
-          subtitle.innerText = 'Showing combined official Google Calendar feed for all Monarch teams.';
+          subtitle.innerText = 'Showing combined official Google Calendar feed for Monarch teams.';
         } else {
           const item = sportCalendars[activeSport];
           title.innerText = `Trinity Hall ${item ? item.name : ''} Schedule`;
           subtitle.innerText = `Showing dedicated ${item ? item.name : ''} Google Calendar feed.`;
         }
       }
-    }
 
-    function switchView(view) {
-      currentView = view;
-      document.getElementById('view-container-google').classList.toggle('hidden', view !== 'google');
-      document.getElementById('view-container-grid').classList.toggle('hidden', view !== 'grid');
-      document.getElementById('view-container-agenda').classList.toggle('hidden', view !== 'agenda');
-
-      const activeClass = 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm bg-trinity-navy text-white';
-      const inactiveClass = 'px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 transition flex items-center gap-1.5';
-
-      document.getElementById('view-btn-google').className = view === 'google' ? activeClass : inactiveClass;
-      document.getElementById('view-btn-grid').className = view === 'grid' ? activeClass : inactiveClass;
-      document.getElementById('view-btn-agenda').className = view === 'agenda' ? activeClass : inactiveClass;
-    }
-
-    function renderGridCalendar() {
-      const container = document.getElementById('grid-days-container');
-      const monthTitle = document.getElementById('grid-month-title');
-      if (!container || !monthTitle) return;
-
-      const year = currentGridDate.getFullYear();
-      const month = currentGridDate.getMonth();
-
-      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-      monthTitle.innerText = `${monthNames[month]} ${year}`;
-
-      const firstDay = new Date(year, month, 1).getDay();
-      const totalDays = new Date(year, month + 1, 0).getDate();
-
-      let html = '';
-
-      for (let i = 0; i < firstDay; i++) {
-        html += `<div class="h-24 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-800 opacity-40"></div>`;
+      if (embedUrl) {
+        if (iframe) iframe.src = embedUrl;
+        if (overlay) overlay.classList.add('hidden');
+      } else {
+        // Show friendly overlay if selected sport lacks a calendar ID
+        if (overlay) {
+          const sportName = sportCalendars[activeSport] ? sportCalendars[activeSport].name : 'this sport';
+          document.getElementById('no-id-title').innerText = `No ${sportName} Calendar ID`;
+          document.getElementById('no-id-desc').innerText = `A Google Calendar ID has not been entered for ${sportName} yet. Add the ID via Calendar Feeds or view All Sports.`;
+          overlay.classList.remove('hidden');
+        }
       }
-
-      for (let day = 1; day <= totalDays; day++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayEvents = eventsData.filter(ev => {
-          const matchSport = activeSport === 'all' || ev.sportKey === activeSport;
-          return ev.date === dateStr && matchSport;
-        });
-
-        html += `
-          <div class="h-24 p-1.5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col justify-between overflow-hidden hover:border-trinity-orange transition">
-            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">${day}</span>
-            <div class="space-y-1 overflow-y-auto custom-scrollbar">
-        `;
-
-        dayEvents.forEach(ev => {
-          const sportObj = sportCalendars[ev.sportKey] || { name: 'Sport', hex: '#ea580c' };
-          html += `
-            <div onclick="openEventModal(${ev.id})" class="text-[10px] p-1 rounded font-bold text-white truncate cursor-pointer shadow-sm hover:opacity-90" style="background-color: ${sportObj.hex}">
-              ${ev.title}
-            </div>
-          `;
-        });
-
-        html += `</div></div>`;
-      }
-
-      container.innerHTML = html;
-    }
-
-    function prevMonth() {
-      currentGridDate.setMonth(currentGridDate.getMonth() - 1);
-      renderGridCalendar();
-    }
-    function nextMonth() {
-      currentGridDate.setMonth(currentGridDate.getMonth() + 1);
-      renderGridCalendar();
-    }
-    function resetMonth() {
-      currentGridDate = new Date();
-      renderGridCalendar();
-    }
-
-    function renderAgendaView() {
-      const container = document.getElementById('agenda-list-container');
-      if (!container) return;
-      const filtered = eventsData.filter(ev => activeSport === 'all' || ev.sportKey === activeSport);
-
-      const countEl = document.getElementById('agenda-count');
-      if (countEl) countEl.innerText = `Showing ${filtered.length} fixtures`;
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 font-semibold">No scheduled events found for this sport filter.</div>`;
-        return;
-      }
-
-      let html = '';
-      filtered.forEach(ev => {
-        const sportObj = sportCalendars[ev.sportKey] || { name: 'Sport', icon: '🏆', hex: '#ea580c' };
-        html += `
-          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-trinity-orange transition">
-            <div class="flex items-start space-x-3">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold shadow-sm" style="background-color: ${sportObj.hex}">
-                ${sportObj.icon}
-              </div>
-              <div>
-                <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">${sportObj.name}</span>
-                <h4 class="text-sm font-bold text-slate-900 dark:text-white">${ev.title}</h4>
-                <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
-                  <span><i class="fa-regular fa-calendar text-trinity-orange"></i> ${ev.date}</span>
-                  <span><i class="fa-regular fa-clock text-trinity-orange"></i> ${ev.time}</span>
-                </p>
-              </div>
-            </div>
-            <div class="text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-1.5 font-medium">
-              <i class="fa-solid fa-location-dot text-trinity-orange"></i> ${ev.location}
-            </div>
-          </div>
-        `;
-      });
-
-      container.innerHTML = html;
-    }
-
-    function filterAgenda() {
-      const q = document.getElementById('agenda-search').value.toLowerCase();
-      const container = document.getElementById('agenda-list-container');
-      const filtered = eventsData.filter(ev => {
-        const matchSport = activeSport === 'all' || ev.sportKey === activeSport;
-        const matchSearch = ev.title.toLowerCase().includes(q) || ev.location.toLowerCase().includes(q);
-        return matchSport && matchSearch;
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 font-semibold">No matching fixtures found.</div>`;
-        return;
-      }
-
-      let html = '';
-      filtered.forEach(ev => {
-        const sportObj = sportCalendars[ev.sportKey] || { name: 'Sport', icon: '🏆', hex: '#ea580c' };
-        html += `
-          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div class="flex items-start space-x-3">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-lg font-bold" style="background-color: ${sportObj.hex}">
-                ${sportObj.icon}
-              </div>
-              <div>
-                <span class="text-[10px] font-extrabold uppercase text-slate-400">${sportObj.name}</span>
-                <h4 class="text-sm font-bold text-slate-900 dark:text-white">${ev.title}</h4>
-                <p class="text-xs text-slate-500 dark:text-slate-400">${ev.date} at ${ev.time}</p>
-              </div>
-            </div>
-            <div class="text-xs text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
-              ${ev.location}
-            </div>
-          </div>
-        `;
-      });
-      container.innerHTML = html;
     }
 
     function renderSettingsInputs() {
@@ -723,23 +506,6 @@
       localStorage.removeItem('th_sport_calendars');
       renderSettingsInputs();
       saveCalendarSettings();
-    }
-
-    function openEventModal(id) {
-      const ev = eventsData.find(e => e.id === id);
-      if (!ev) return;
-      const sportObj = sportCalendars[ev.sportKey] || { name: 'Sport' };
-
-      document.getElementById('event-modal-sport').innerText = sportObj.name;
-      document.getElementById('event-modal-title').innerText = ev.title;
-      document.getElementById('event-modal-time').innerHTML = `<i class="fa-regular fa-clock text-trinity-orange"></i> ${ev.date} at ${ev.time}`;
-      document.getElementById('event-modal-location').innerHTML = `<i class="fa-solid fa-location-dot text-trinity-orange"></i> ${ev.location}`;
-
-      document.getElementById('event-modal').classList.remove('hidden');
-    }
-
-    function closeEventModal() {
-      document.getElementById('event-modal').classList.add('hidden');
     }
 
     function renderSubscribeSelectOptions() {
@@ -832,8 +598,6 @@
     window.addEventListener('DOMContentLoaded', () => {
       renderSportButtons();
       updateCalendarView();
-      renderGridCalendar();
-      renderAgendaView();
       renderSubscribeSelectOptions();
     });
   </script>
