@@ -333,84 +333,75 @@
       'basketball': { name: 'Basketball', icon: '🏀', id: 'c_10e99bc5b86cf378b87a68e6b315de3fb3f2561ee0ce9dafdab89ae1d3c7d017@group.calendar.google.com', color: '%23e65100', hex: '#e65100' },
       'flag-football': { name: 'Flag Football', icon: '🏈', id: '', color: '%231b5e20', hex: '#1b5e20' },
       'golf': { name: 'Golf', icon: '⛳', id: '', color: '%232e7d32', hex: '#2e7d32' },
-      'ice-hockey': { name: 'Ice Hockey', icon: '🏒', id: 'c_3a063e9afdb9254c95fc690d179fd7ec2b1a7f4c9f8b2f4e7081df420394d4d4@group.calendar.google.com', color: '%230288d1', hex: '#0288d1' },
+      'ice-hockey': { name: 'Ice Hockey', icon: '🏒', id: 'c_3a063e9afdb9254c95fc690d179fd7ec2b1a7f4c9f8b2f4e7081df420394d4d4@group.calendar.google.com', color: '%232e7d32', hex: '#2e7d32' },
       'lacrosse': { name: 'Lacrosse', icon: '🥍', id: '', color: '%23d81b60', hex: '#d81b60' },
       'sailing': { name: 'Sailing', icon: '⛵', id: 'c_bfeb16a572924638b4fb09eb473d40d14a77e3697a68591416502fd1f2b1b944@group.calendar.google.com', color: '%2300838f', hex: '#00838f' },
       'softball': { name: 'Softball', icon: '🥎', id: '', color: '%23c0ca33', hex: '#c0ca33' },
-      'spring-track': { name: 'Spring Track & Field', icon: '👟', id: '', color: '%23795548', hex: '#795548' },
-      'swimming': { name: 'Swimming', icon: '🏊', id: 'c_b140b5b887f133b98f454bb6ba9c109955dd0c1030fa2efd42990407d6883be5@group.calendar.google.com', color: '%2300acc1', hex: '#00acc1' },
-      'winter-track': { name: 'Winter Track & Field', icon: '❄️', id: 'c_b140b5b887f133b98f454bb6ba9c109955dd0c1030fa2efd42990407d6883be5@group.calendar.google.com', color: '%233949ab', hex: '#3949ab' }
+      'spring-track': { name: 'Spring Track & Field', icon: '👟', id: '', color: '%23d32f2f', hex: '#d32f2f' },
+      'swimming': { name: 'Swimming', icon: '🏊', id: 'c_b140b5b887f133b98f454bb6ba9c109955dd0c1030fa2efd42990407d6883be5@group.calendar.google.com', color: '%230288d1', hex: '#0288d1' },
+      'winter-track': { name: 'Winter Track & Field', icon: '❄️', id: 'c_dec70139c417e684af19db68b8cc6af591f6a10b4e040865f502f6104146da00@group.calendar.google.com', color: '%23d32f2f', hex: '#d32f2f' }
     };
 
-    // Load stored calendars, ensuring non-empty default IDs always populate over empty cached values
-    let storedCalendars = {};
-    try {
-      storedCalendars = JSON.parse(localStorage.getItem('th_sport_calendars')) || {};
-    } catch(e) {
-      storedCalendars = {};
-    }
+    // Active state variable
+    let currentSportKey = 'all';
+    let activeCalendars = {};
 
-    let sportCalendars = JSON.parse(JSON.stringify(defaultSportCalendars));
-    Object.keys(defaultSportCalendars).forEach(key => {
-      // If stored item has a valid ID, use it. Otherwise retain the default non-empty ID.
-      if (storedCalendars[key] && storedCalendars[key].id && storedCalendars[key].id.trim() !== '') {
-        sportCalendars[key].id = storedCalendars[key].id.trim();
+    function loadCalendars() {
+      const stored = localStorage.getItem('th_athletics_calendars_v2');
+      if (stored) {
+        try {
+          activeCalendars = JSON.parse(stored);
+          // Safety check: ensure default IDs fill in if stored value was empty
+          Object.keys(defaultSportCalendars).forEach(key => {
+            if (!activeCalendars[key]) {
+              activeCalendars[key] = { ...defaultSportCalendars[key] };
+            } else if (!activeCalendars[key].id && defaultSportCalendars[key].id) {
+              activeCalendars[key].id = defaultSportCalendars[key].id;
+            }
+          });
+        } catch(e) {
+          activeCalendars = JSON.parse(JSON.stringify(defaultSportCalendars));
+        }
+      } else {
+        activeCalendars = JSON.parse(JSON.stringify(defaultSportCalendars));
       }
-    });
-
-    let activeSport = 'all';
-
-    function restoreAndForceDefaults() {
-      sportCalendars = JSON.parse(JSON.stringify(defaultSportCalendars));
-      localStorage.setItem('th_sport_calendars', JSON.stringify(sportCalendars));
-      renderSportButtons();
-      updateCalendarView();
     }
 
-    function buildEmbedUrl(sport) {
-      const baseUrl = "https://calendar.google.com/calendar/embed?ctz=America%2FNew_York&showTitle=0&showTabs=1&showPrint=0&showTz=0";
-      
-      if (sport === 'all') {
-        let combinedParams = "";
-        Object.keys(sportCalendars).forEach(key => {
-          const item = sportCalendars[key];
-          if (item && item.id && item.id.trim()) {
-            const encodedId = encodeURIComponent(item.id.trim());
-            const encodedColor = item.color || '%23f97316';
-            combinedParams += `&src=${encodedId}&color=${encodedColor}`;
-          }
-        });
-        return baseUrl + combinedParams;
-      }
-
-      const item = sportCalendars[sport];
-      if (!item || !item.id || !item.id.trim()) return null;
-
-      const encodedId = encodeURIComponent(item.id.trim());
-      const encodedColor = item.color || '%23f97316';
-
-      return `${baseUrl}&title=Trinity%20Hall%20${encodeURIComponent(item.name)}%20Schedule&src=${encodedId}&color=${encodedColor}`;
+    function saveCalendars() {
+      localStorage.setItem('th_athletics_calendars_v2', JSON.stringify(activeCalendars));
     }
 
-    function renderSportButtons() {
+    function renderSportFilterButtons() {
       const container = document.getElementById('sport-buttons-container');
       if (!container) return;
 
       let html = `
-        <button onclick="selectSport('all')" class="sport-btn px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap transition flex items-center gap-2 border shadow-sm ${activeSport === 'all' ? 'bg-trinity-navy text-white border-trinity-orange ring-2 ring-trinity-orange/40' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'}">
-          <span>🏆</span> All Sports
+        <button onclick="selectSport('all')" id="btn-sport-all" 
+          class="sport-btn px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center space-x-2 border shadow-sm ${
+            currentSportKey === 'all' 
+              ? 'bg-trinity-navy text-white border-trinity-navy ring-2 ring-trinity-orange' 
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+          }">
+          <span>🏆</span>
+          <span>All Sports Schedule</span>
         </button>
       `;
 
-      Object.keys(sportCalendars).forEach(key => {
-        const item = sportCalendars[key];
-        const isActive = activeSport === key;
-        const hasId = item.id && item.id.trim().length > 0;
-        
+      Object.keys(activeCalendars).forEach(key => {
+        const sport = activeCalendars[key];
+        const isActive = currentSportKey === key;
+        const hasId = sport.id && sport.id.trim().length > 0;
+
         html += `
-          <button onclick="selectSport('${key}')" class="sport-btn px-4 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap transition flex items-center gap-2 border shadow-sm ${isActive ? 'bg-trinity-navy text-white border-trinity-orange ring-2 ring-trinity-orange/40' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'}">
-            <span>${item.icon}</span> ${item.name}
-            ${!hasId ? '<span class="w-1.5 h-1.5 rounded-full bg-slate-400" title="No ID configured"></span>' : ''}
+          <button onclick="selectSport('${key}')" id="btn-sport-${key}" 
+            class="sport-btn px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap flex items-center space-x-2 border shadow-sm ${
+              isActive 
+                ? 'bg-trinity-navy text-white border-trinity-navy ring-2 ring-trinity-orange' 
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+            }">
+            <span>${sport.icon}</span>
+            <span>${sport.name}</span>
+            ${!hasId ? '<span class="w-2 h-2 rounded-full bg-amber-500" title="No Calendar ID set"></span>' : ''}
           </button>
         `;
       });
@@ -419,71 +410,97 @@
     }
 
     function selectSport(key) {
-      activeSport = key;
+      currentSportKey = key;
+      renderSportFilterButtons();
+      updateCalendarIframe();
+
+      // Update indicator title
       const indicator = document.getElementById('active-sport-indicator');
-      if (indicator) {
-        indicator.innerText = key === 'all' ? 'Showing: All Sports' : `Showing: ${sportCalendars[key] ? sportCalendars[key].name : key}`;
-      }
-      renderSportButtons();
-      updateCalendarView();
-    }
+      const titleEl = document.getElementById('calendar-title');
+      const subtitleEl = document.getElementById('calendar-subtitle');
 
-    function updateCalendarView() {
-      const iframe = document.getElementById('google-calendar-iframe');
-      const overlay = document.getElementById('no-id-overlay');
-      const title = document.getElementById('calendar-title');
-      const subtitle = document.getElementById('calendar-subtitle');
-
-      const embedUrl = buildEmbedUrl(activeSport);
-
-      if (title && subtitle) {
-        if (activeSport === 'all') {
-          title.innerText = 'Trinity Hall Athletics Schedule';
-          subtitle.innerText = 'Showing combined official Google Calendar feed for Monarch teams.';
-        } else {
-          const item = sportCalendars[activeSport];
-          title.innerText = `Trinity Hall ${item ? item.name : ''} Schedule`;
-          subtitle.innerText = `Showing dedicated ${item ? item.name : ''} Google Calendar feed.`;
-        }
-      }
-
-      if (embedUrl) {
-        if (iframe) iframe.src = embedUrl;
-        if (overlay) overlay.classList.add('hidden');
+      if (key === 'all') {
+        if (indicator) indicator.textContent = 'Showing: All Sports Master Calendar';
+        if (titleEl) titleEl.textContent = 'Trinity Hall Master Athletics Schedule';
+        if (subtitleEl) subtitleEl.textContent = 'Consolidated live view for all Trinity Hall Monarch athletic teams.';
       } else {
-        if (overlay) {
-          const sportName = sportCalendars[activeSport] ? sportCalendars[activeSport].name : 'this sport';
-          document.getElementById('no-id-title').innerText = `No ${sportName} Calendar ID`;
-          document.getElementById('no-id-desc').innerText = `A Google Calendar ID has not been entered for ${sportName} yet. Click "Load Default Calendar IDs" or configure manually.`;
-          overlay.classList.remove('hidden');
-        }
+        const sport = activeCalendars[key];
+        if (indicator) indicator.textContent = `Showing: ${sport.name}`;
+        if (titleEl) titleEl.textContent = `Trinity Hall ${sport.name} Schedule`;
+        if (subtitleEl) subtitleEl.textContent = `Official Google Calendar feed for ${sport.name}.`;
       }
     }
 
-    function renderSettingsInputs() {
+    function buildGoogleEmbedUrl() {
+      const baseUrl = "https://calendar.google.com/calendar/embed?";
+      const timezone = "America%2FNew_York";
+      const settings = "showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=1&showCalendars=1&showTz=0&mode=MONTH&height=900&wkst=1&bgcolor=%23ffffff";
+      
+      let srcParams = [];
+
+      if (currentSportKey === 'all') {
+        // Overlay all non-empty calendar IDs
+        Object.keys(activeCalendars).forEach(key => {
+          const sport = activeCalendars[key];
+          if (sport.id && sport.id.trim() !== '') {
+            srcParams.push(`src=${encodeURIComponent(sport.id.trim())}&color=${sport.color}`);
+          }
+        });
+      } else {
+        const sport = activeCalendars[currentSportKey];
+        if (sport && sport.id && sport.id.trim() !== '') {
+          srcParams.push(`src=${encodeURIComponent(sport.id.trim())}&color=${sport.color}`);
+        }
+      }
+
+      if (srcParams.length === 0) {
+        return null; // Signals empty state overlay
+      }
+
+      return `${baseUrl}${settings}&ctz=${timezone}&${srcParams.join('&')}`;
+    }
+
+    function updateCalendarIframe() {
+      const iframe = document.getElementById('google-calendar-iframe');
+      const noIdOverlay = document.getElementById('no-id-overlay');
+      const embedUrl = buildGoogleEmbedUrl();
+
+      if (!embedUrl) {
+        if (noIdOverlay) {
+          const sportName = currentSportKey === 'all' ? 'All Sports' : activeCalendars[currentSportKey]?.name;
+          document.getElementById('no-id-title').textContent = `No Calendar Configured for ${sportName}`;
+          document.getElementById('no-id-desc').textContent = `A Google Calendar ID has not been set for this team yet. You can add one in Calendar Feeds or load defaults.`;
+          noIdOverlay.classList.remove('hidden');
+        }
+        if (iframe) iframe.src = 'about:blank';
+      } else {
+        if (noIdOverlay) noIdOverlay.classList.add('hidden');
+        if (iframe) iframe.src = embedUrl;
+      }
+    }
+
+    function openSettingsModal() {
       const container = document.getElementById('settings-inputs-list');
       if (!container) return;
 
       let html = '';
-      Object.keys(sportCalendars).forEach(key => {
-        const item = sportCalendars[key];
+      Object.keys(activeCalendars).forEach(key => {
+        const sport = activeCalendars[key];
         html += `
-          <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                <span>${item.icon}</span> ${item.name} Calendar ID
-              </label>
-              <span class="w-3 h-3 rounded-full" style="background-color: ${item.hex}"></span>
+          <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center space-x-2 sm:w-1/3">
+              <span class="text-xl">${sport.icon}</span>
+              <span class="font-bold text-xs text-slate-800 dark:text-slate-100">${sport.name}</span>
             </div>
-            <input type="text" id="calId-${key}" value="${item.id || ''}" placeholder="e.g. c_... @group.calendar.google.com" class="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-trinity-orange outline-none">
+            <div class="flex-1">
+              <input type="text" id="setting-id-${key}" value="${sport.id || ''}" placeholder="calendar-id@group.calendar.google.com" 
+                class="w-full px-3 py-1.5 rounded-xl text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-trinity-orange outline-none font-mono" />
+            </div>
           </div>
         `;
       });
-      container.innerHTML = html;
-    }
 
-    function openSettingsModal() {
-      renderSettingsInputs();
+      container.innerHTML = html;
       document.getElementById('settings-modal').classList.remove('hidden');
     }
 
@@ -493,54 +510,59 @@
     }
 
     function saveCalendarSettings() {
-      Object.keys(sportCalendars).forEach(key => {
-        const input = document.getElementById(`calId-${key}`);
+      Object.keys(activeCalendars).forEach(key => {
+        const input = document.getElementById(`setting-id-${key}`);
         if (input) {
-          sportCalendars[key].id = input.value.trim();
+          activeCalendars[key].id = input.value.trim();
         }
       });
 
-      localStorage.setItem('th_sport_calendars', JSON.stringify(sportCalendars));
-      
-      const msg = document.getElementById('save-msg');
-      if (msg) msg.classList.remove('hidden');
+      saveCalendars();
+      renderSportFilterButtons();
+      updateCalendarIframe();
 
-      setTimeout(() => {
-        closeSettingsModal();
-        updateCalendarView();
-        renderSubscribeSelectOptions();
-        renderSportButtons();
-      }, 800);
+      const msg = document.getElementById('save-msg');
+      if (msg) {
+        msg.classList.remove('hidden');
+        setTimeout(() => {
+          msg.classList.add('hidden');
+          closeSettingsModal();
+        }, 1200);
+      }
     }
 
     function resetDefaultCalendars() {
-      restoreAndForceDefaults();
-      renderSettingsInputs();
-      const msg = document.getElementById('save-msg');
-      if (msg) msg.classList.remove('hidden');
-      setTimeout(() => {
-        closeSettingsModal();
-      }, 800);
+      activeCalendars = JSON.parse(JSON.stringify(defaultSportCalendars));
+      saveCalendars();
+      openSettingsModal();
     }
 
-    function renderSubscribeSelectOptions() {
+    function restoreAndForceDefaults() {
+      activeCalendars = JSON.parse(JSON.stringify(defaultSportCalendars));
+      saveCalendars();
+      renderSportFilterButtons();
+      selectSport('all');
+    }
+
+    function openSubscribeModal() {
       const select = document.getElementById('subscribe-sport-select');
       if (!select) return;
 
-      let html = `<option value="all">🏆 All Trinity Hall Sports (Combined)</option>`;
-      Object.keys(sportCalendars).forEach(key => {
-        const item = sportCalendars[key];
-        html += `<option value="${key}">${item.icon} ${item.name}</option>`;
+      let html = '<option value="all">🏆 All Sports Consolidated Feed</option>';
+      Object.keys(activeCalendars).forEach(key => {
+        const sport = activeCalendars[key];
+        if (sport.id) {
+          html += `<option value="${key}">${sport.icon} ${sport.name}</option>`;
+        }
       });
-      select.innerHTML = html;
-    }
 
-    function openSubscribeModal(sportKey) {
-      renderSubscribeSelectOptions();
-      const select = document.getElementById('subscribe-sport-select');
-      if (select) {
-        select.value = (sportKey && sportKey !== 'all') ? sportKey : (activeSport !== 'all' ? activeSport : 'all');
+      select.innerHTML = html;
+      if (currentSportKey && activeCalendars[currentSportKey]?.id) {
+        select.value = currentSportKey;
+      } else {
+        select.value = 'all';
       }
+
       updateSubscribeLinks();
       document.getElementById('subscribe-modal').classList.remove('hidden');
     }
@@ -549,72 +571,85 @@
       document.getElementById('subscribe-modal').classList.add('hidden');
     }
 
-    function updateSubscribeLinks() {
+    function getSelectedCalendarId() {
       const select = document.getElementById('subscribe-sport-select');
-      const sportKey = select ? select.value : 'all';
-      
-      let calId = '';
-      if (sportKey === 'all') {
-        calId = sportCalendars['cross-country'] ? sportCalendars['cross-country'].id : '';
-      } else {
-        const item = sportCalendars[sportKey] || sportCalendars['soccer'];
-        calId = item ? item.id : '';
+      const key = select ? select.value : 'all';
+
+      if (key !== 'all' && activeCalendars[key]?.id) {
+        return activeCalendars[key].id;
       }
+      // Return first available active calendar ID for consolidated feed
+      for (const k of Object.keys(activeCalendars)) {
+        if (activeCalendars[k].id) return activeCalendars[k].id;
+      }
+      return defaultSportCalendars['basketball'].id;
+    }
 
-      const encodedId = encodeURIComponent(calId);
+    function updateSubscribeLinks() {
+      const calId = getSelectedCalendarId();
+      const cleanId = calId.trim();
 
-      const googleUrl = `https://calendar.google.com/calendar/render?cid=${encodedId}`;
-      const appleUrl = `webcal://calendar.google.com/calendar/ical/${encodedId}/public/basic.ics`;
-      const outlookUrl = `https://outlook.live.com/calendar/0/addcalendar?url=https://calendar.google.com/calendar/ical/${encodedId}/public/basic.ics`;
+      const webcalUrl = `webcal://calendar.google.com/calendar/ical/${encodeURIComponent(cleanId)}/public/basic.ics`;
+      const googleUrl = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(cleanId)}`;
+      const outlookUrl = `https://outlook.live.com/calendar/0/addcalendar?url=${encodeURIComponent(`https://calendar.google.com/calendar/ical/${cleanId}/public/basic.ics`)}`;
 
       document.getElementById('sub-link-google').href = googleUrl;
-      document.getElementById('sub-link-apple').href = appleUrl;
+      document.getElementById('sub-link-apple').href = webcalUrl;
       document.getElementById('sub-link-outlook').href = outlookUrl;
     }
 
     function copyIcsUrl() {
-      const select = document.getElementById('subscribe-sport-select');
-      const sportKey = select ? select.value : 'all';
-      let calId = '';
-      if (sportKey === 'all') {
-        calId = sportCalendars['cross-country'] ? sportCalendars['cross-country'].id : '';
-      } else {
-        const item = sportCalendars[sportKey] || sportCalendars['soccer'];
-        calId = item ? item.id : '';
-      }
+      const calId = getSelectedCalendarId();
+      const icsUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(calId.trim())}/public/basic.ics`;
 
-      const icsUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(calId)}/public/basic.ics`;
-
-      const input = document.createElement('input');
-      input.value = icsUrl;
-      document.body.appendChild(input);
-      input.select();
+      const tempInput = document.createElement('input');
+      tempInput.value = icsUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
       document.execCommand('copy');
-      document.body.removeChild(input);
+      document.body.removeChild(tempInput);
 
       const label = document.getElementById('copy-ics-label');
       if (label) {
-        const orig = label.innerText;
-        label.innerText = 'Copied to Clipboard!';
-        setTimeout(() => { label.innerText = orig; }, 2000);
+        const oldText = label.textContent;
+        label.textContent = "Copied to Clipboard!";
+        setTimeout(() => { label.textContent = oldText; }, 2000);
       }
     }
 
     function toggleTheme() {
-      document.documentElement.classList.toggle('dark');
+      const html = document.documentElement;
       const icon = document.getElementById('theme-icon');
-      if (document.documentElement.classList.contains('dark')) {
-        icon.className = 'fa-solid fa-sun text-lg';
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        if (icon) icon.className = 'fa-solid fa-moon text-lg';
+        localStorage.setItem('th_theme', 'light');
       } else {
-        icon.className = 'fa-solid fa-moon text-lg';
+        html.classList.add('dark');
+        if (icon) icon.className = 'fa-solid fa-sun text-lg';
+        localStorage.setItem('th_theme', 'dark');
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      renderSportButtons();
-      updateCalendarView();
-      renderSubscribeSelectOptions();
-    });
+    function initTheme() {
+      const savedTheme = localStorage.getItem('th_theme');
+      const icon = document.getElementById('theme-icon');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+        if (icon) icon.className = 'fa-solid fa-sun text-lg';
+      } else {
+        document.documentElement.classList.remove('dark');
+        if (icon) icon.className = 'fa-solid fa-moon text-lg';
+      }
+    }
+
+    // Initialize application on page load
+    window.onload = function() {
+      initTheme();
+      loadCalendars();
+      renderSportFilterButtons();
+      selectSport('all');
+    };
   </script>
 </body>
 </html>
